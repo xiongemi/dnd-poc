@@ -33,3 +33,12 @@ You can drag items in any column to reorder and compare behavior and ergonomics.
 - `pnpm dev` – start dev server
 - `pnpm build` – type-check and build
 - `pnpm prepare` – type-check only
+
+## GitHub Pages
+
+The repo includes a workflow that builds and deploys the app to GitHub Pages on push to `main` or `master`.
+
+1. Push the repo to GitHub.
+2. In the repo: **Settings → Pages → Build and deployment → Source**: choose **GitHub Actions**.
+3. Push to `main` (or `master`); the workflow will run and deploy.
+4. The site will be at `https://xiongemi.github.io/dnd-poc/`.
