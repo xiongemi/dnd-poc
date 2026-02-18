@@ -59,9 +59,9 @@ function App() {
           <PragmaticDndList initialItems={INITIAL_ITEMS} />
         </section>
         <section className="lib-card">
-          <h2>@dnd-kit/core</h2>
+          <h2>@dnd-kit</h2>
           <p className="subtitle">
-            <a href="https://dndkit.com/" target="_blank" rel="noreferrer">dnd kit</a> — modern toolkit, sortable preset
+            <a href="https://dndkit.com/" target="_blank" rel="noreferrer">dnd kit</a> — DndContext + SortableContext + useSortable
           </p>
           <DndKitList initialItems={INITIAL_ITEMS} />
         </section>
