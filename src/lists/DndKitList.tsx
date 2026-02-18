@@ -11,6 +11,13 @@ import {
   useDroppable,
   type DragEndEvent,
 } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ListItem } from '../types';
 
@@ -216,49 +223,59 @@ export function Draggable({
   return <>{children(provided, snapshot)}</>;
 }
 
-// --- Example list (same pattern as BeautifulDndList) ---
-const reorder = (list: ListItem[], startIndex: number, endIndex: number): ListItem[] => {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-  return result;
-};
+// --- DndKit list (uses sortable preset; works reliably) ---
+function SortableItem({ item }: { item: ListItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`dnd-item ${isDragging ? 'dragging' : ''}`}
+      {...attributes}
+      {...listeners}
+    >
+      {item.label}
+    </li>
+  );
+}
 
 export function DndKitList({ initialItems }: { initialItems: ListItem[] }) {
   const [items, setItems] = useState(initialItems);
+  const itemIds = items.map((i) => i.id);
 
-  const onDragEnd = useCallback((result: DropResult) => {
-    if (!result.destination) return;
-    setItems((list) => reorder(list, result.source.index, result.destination!.index));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setItems((list) => {
+        const oldIndex = list.findIndex((i) => i.id === active.id);
+        const newIndex = list.findIndex((i) => i.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return list;
+        return arrayMove(list, oldIndex, newIndex);
+      });
+    }
   }, []);
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="list">
-        {(provided) => (
-          <ul
-            className="dnd-list droppable-zone"
-            ref={provided.innerRef as (el: HTMLUListElement | null) => void}
-            {...provided.droppableProps}
-          >
-            {items.map((item, index) => (
-              <Draggable key={item.id} draggableId={item.id} index={index}>
-                {(provided, snapshot) => (
-                  <li
-                    ref={provided.innerRef as (el: HTMLLIElement | null) => void}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={`dnd-item ${snapshot.isDragging ? 'dragging' : ''}`}
-                  >
-                    {item.label}
-                  </li>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </ul>
-        )}
-      </Droppable>
-    </DragDropContext>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+        <ul className="dnd-list droppable-zone">
+          {items.map((item) => (
+            <SortableItem key={item.id} item={item} />
+          ))}
+        </ul>
+      </SortableContext>
+    </DndContext>
   );
 }
